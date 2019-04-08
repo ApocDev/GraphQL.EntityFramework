@@ -383,7 +383,7 @@ query ($value: String!)
     }
   }
 }";
-        var child = new ChildForRenameEntity
+        var child1 = new ChildForRenameEntity
         {
             Id = Guid.Parse("00000000-0000-0000-0000-000000000002"),
         };
@@ -395,10 +395,10 @@ query ($value: String!)
         var entity = new RenameFieldEntity
         {
             Id = Guid.Parse("00000000-0000-0000-0000-000000000001"),
-            Child = child,
+            Child = child1,
             Children = new List<ChildForRenameEntity>{child2}
         };
-        var result = await RunQuery(queryString, null, true, null, entity, child, child2);
+        var result = await RunQuery(queryString, null, true, null, entity, child1, child2);
         ObjectApprover.VerifyWithJson(result);
     }
 
