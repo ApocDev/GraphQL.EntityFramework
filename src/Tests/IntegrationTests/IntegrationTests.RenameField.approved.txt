@@ -1,1 +1,14 @@
-﻿ 
+﻿{
+  renameFields: [
+    {
+      child: {
+        id: 'Guid 1'
+      },
+      children: [
+        {
+          id: 'Guid 2'
+        }
+      ]
+    }
+  ]
+}

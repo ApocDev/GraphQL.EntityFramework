@@ -10,5 +10,8 @@ public class RenameFieldGraph :
         AddNavigationField(
             name: "child",
             resolve: context => context.Source.Child);
+        AddNavigationListField(
+            name: "children",
+            resolve: context => context.Source.Children);
     }
 }
