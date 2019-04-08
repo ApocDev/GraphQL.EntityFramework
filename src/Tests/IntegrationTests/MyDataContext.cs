@@ -4,6 +4,8 @@ public class MyDataContext :
     DbContext
 {
     public DbSet<ParentEntity> ParentEntities { get; set; }
+    public DbSet<ChildForRenameEntity> ChildForRenameEntities { get; set; }
+    public DbSet<RenameFieldEntity> RenameFieldEntities { get; set; }
     public DbSet<FilterParentEntity> FilterParentEntities { get; set; }
     public DbSet<FilterChildEntity> FilterChildEntities { get; set; }
     public DbSet<ChildEntity> ChildEntities { get; set; }
@@ -25,6 +27,8 @@ public class MyDataContext :
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<RenameFieldEntity>();
+        modelBuilder.Entity<ChildForRenameEntity>();
         modelBuilder.Entity<CustomTypeEntity>();
         modelBuilder.Entity<WithNullableEntity>();
         modelBuilder.Entity<FilterParentEntity>();

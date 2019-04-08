@@ -22,6 +22,8 @@ public partial class IntegrationTests :
         GraphTypeTypeRegistry.Register<FilterParentEntity, FilterParentGraph>();
         GraphTypeTypeRegistry.Register<WithManyChildrenEntity, WithManyChildrenGraph>();
         GraphTypeTypeRegistry.Register<CustomTypeEntity, CustomTypeGraph>();
+        GraphTypeTypeRegistry.Register<RenameFieldEntity, RenameFieldGraph>();
+        GraphTypeTypeRegistry.Register<ChildForRenameEntity, ChildForRenameGraph>();
         GraphTypeTypeRegistry.Register<Child1Entity, Child1Graph>();
         GraphTypeTypeRegistry.Register<ChildEntity, ChildGraph>();
         GraphTypeTypeRegistry.Register<ParentEntity, ParentGraph>();
@@ -361,6 +363,33 @@ query ($value: String!)
             {"value", "value2"}
         });
         var result = await RunQuery(queryString, inputs, true, null, entity1, entity2);
+        ObjectApprover.VerifyWithJson(result);
+    }
+
+    [Fact]
+    public async Task RenameField()
+    {
+        var queryString = @"
+{
+  renameFields
+  {
+    child
+    {
+      id
+    }
+  }
+}";
+        var child = new ChildForRenameEntity
+        {
+            Id = Guid.Parse("00000000-0000-0000-0000-000000000002"),
+        };
+
+        var entity = new RenameFieldEntity
+        {
+            Id = Guid.Parse("00000000-0000-0000-0000-000000000001"),
+            Child = child
+        };
+        var result = await RunQuery(queryString, null, true, null, entity, child);
         ObjectApprover.VerifyWithJson(result);
     }
 
@@ -1125,6 +1154,8 @@ query ($value: String!)
             Purge(dataContext.Level3Entities);
             Purge(dataContext.ChildEntities);
             Purge(dataContext.ParentEntities);
+            Purge(dataContext.RenameFieldEntities);
+            Purge(dataContext.ChildForRenameEntities);
             Purge(dataContext.WithMisNamedQueryChildEntities);
             Purge(dataContext.WithMisNamedQueryParentEntities);
             Purge(dataContext.WithNullableEntities);

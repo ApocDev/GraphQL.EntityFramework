@@ -15,6 +15,14 @@ public class Query :
             });
 
         AddQueryField(
+            name: "renameFields",
+            resolve: context =>
+            {
+                var dataContext = (MyDataContext) context.UserContext;
+                return dataContext.RenameFieldEntities;
+            });
+
+        AddQueryField(
             name: "skipLevel",
             resolve: context =>
             {
@@ -36,10 +44,10 @@ public class Query :
             {
                 var dataContext = (MyDataContext) context.UserContext;
                 return dataContext.Level1Entities;
-            }, graphType: typeof(Level1Graph));
+            },
+            graphType: typeof(Level1Graph));
 
-        efGraphQlService.AddQueryField(
-            this,
+        AddQueryField(
             name: "withNullableEntities",
             resolve: context =>
             {
@@ -47,8 +55,7 @@ public class Query :
                 return dataContext.WithNullableEntities;
             });
 
-        efGraphQlService.AddQueryField(
-            this,
+        AddQueryField(
             name: "misNamed",
             resolve: context =>
             {
@@ -56,8 +63,7 @@ public class Query :
                 return dataContext.WithMisNamedQueryParentEntities;
             });
 
-        efGraphQlService.AddQueryField(
-            this,
+        AddQueryField(
             name: "parentEntities",
             resolve: context =>
             {
@@ -65,8 +71,7 @@ public class Query :
                 return dataContext.ParentEntities;
             });
 
-        efGraphQlService.AddQueryField(
-            this,
+        AddQueryField(
             name: "childEntities",
             resolve: context =>
             {
@@ -92,8 +97,7 @@ public class Query :
                 return dataContext.ChildEntities;
             });
 
-        efGraphQlService.AddQueryField(
-            this,
+        AddQueryField(
             name: "parentEntitiesFiltered",
             resolve: context =>
             {
@@ -110,8 +114,7 @@ public class Query :
                 return dataContext.FilterParentEntities;
             });
 
-        efGraphQlService.AddSingleField(
-            this,
+        AddSingleField(
             name: "parentEntity",
             resolve: context =>
             {
