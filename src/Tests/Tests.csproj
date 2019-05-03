@@ -4,6 +4,7 @@
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <NoWarn>EF1000</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="GraphQL" Version="2.4.0" />

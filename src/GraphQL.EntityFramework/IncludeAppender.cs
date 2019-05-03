@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GraphQL.Language.AST;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ class IncludeAppender
     public IQueryable<TItem> AddIncludes<TItem, TSource>(IQueryable<TItem> query, ResolveFieldContext<TSource> context)
         where TItem : class
     {
+        query.GetType().GetTypeInfo().DeclaredFields
         var type = typeof(TItem);
         var navigationProperty = navigations[type];
         return AddIncludes(query, context.FieldDefinition, context.SubFields.Values, navigationProperty);

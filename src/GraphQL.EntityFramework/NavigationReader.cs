@@ -8,9 +8,14 @@ static class NavigationReader
 {
     public static Dictionary<Type, List<Navigation>> GetNavigationProperties(IModel model)
     {
-        return model
-            .GetEntityTypes()
+        return GetEntityTypes(model)
             .ToDictionary(x => x.ClrType, GetNavigations);
+    }
+
+    private static IEnumerable<IEntityType> GetEntityTypes(IModel model)
+    {
+        return model
+            .GetEntityTypes();
     }
 
     static List<Navigation> GetNavigations(IEntityType entity)
@@ -25,8 +30,9 @@ static class NavigationReader
     {
         var navigationType = navigation.ClrType;
         var collectionType = navigationType.GetInterfaces()
-            .SingleOrDefault(x => x.IsGenericType &&
-                                  x.GetGenericTypeDefinition() == typeof(ICollection<>));
+            .SingleOrDefault(x =>
+                x.IsGenericType &&
+                x.GetGenericTypeDefinition() == typeof(ICollection<>));
         if (collectionType == null)
         {
             return navigationType;
