@@ -1,9 +1,9 @@
 ﻿using GraphQL.EntityFramework;
 
 public class CustomTypeGraph :
-    EfObjectGraphType<CustomTypeEntity>
+    EfObjectGraphType<IntegrationDbContext, CustomTypeEntity>
 {
-    public CustomTypeGraph(IEfGraphQLService graphQlService) :
+    public CustomTypeGraph(IEfGraphQLService<IntegrationDbContext> graphQlService) :
         base(graphQlService)
     {
         Field(x => x.Id);

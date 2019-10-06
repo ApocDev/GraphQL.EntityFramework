@@ -2,25 +2,31 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using ApprovalTests;
 using GraphQL.Common.Request;
 using GraphQL.EntityFramework.Testing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
 #region GraphQlControllerTests
 
 public class GraphQlControllerTests :
-    XunitLoggingBase
+    XunitApprovalBase
 {
-    static HttpClient client;
-
-    static WebSocketClient websocketClient;
+    static HttpClient client = null!;
+    static WebSocketClient websocketClient = null!;
+    static Task startTask;
 
     static GraphQlControllerTests()
     {
+        startTask = Start();
+    }
+
+    static async Task Start()
+    {
+        await DbContextBuilder.Start();
         var server = GetTestServer();
         client = server.CreateClient();
         websocketClient = server.CreateWebSocketClient();
@@ -31,6 +37,7 @@ public class GraphQlControllerTests :
     [Fact]
     public async Task Get()
     {
+        await startTask;
         var query = @"
 {
   companies
@@ -38,17 +45,15 @@ public class GraphQlControllerTests :
     id
   }
 }";
-        var response = await ClientQueryExecutor.ExecuteGet(client, query);
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync();
-        Assert.Contains(
-            "{\"companies\":[{\"id\":1},{\"id\":4},{\"id\":6},{\"id\":7}]}",
-            result);
+        Approvals.VerifyJson(await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
     public async Task Get_single()
     {
+        await startTask;
         var query = @"
 query ($id: ID!)
 {
@@ -62,15 +67,37 @@ query ($id: ID!)
             id = "1"
         };
 
-        var response = await ClientQueryExecutor.ExecuteGet(client, query, variables);
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query, variables);
         response.EnsureSuccessStatusCode();
+        Approvals.VerifyJson(await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Get_single_not_found()
+    {
+        await startTask;
+        var query = @"
+query ($id: ID!)
+{
+  company(id:$id)
+  {
+    id
+  }
+}";
+        var variables = new
+        {
+            id = "99"
+        };
+
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query, variables);
         var result = await response.Content.ReadAsStringAsync();
-        Assert.Contains(@"{""data"":{""company"":{""id"":1}}}", result);
+        Assert.Contains("Not found", result);
     }
 
     [Fact]
     public async Task Get_variable()
     {
+        await startTask;
         var query = @"
 query ($id: ID!)
 {
@@ -84,15 +111,15 @@ query ($id: ID!)
             id = "1"
         };
 
-        var response = await ClientQueryExecutor.ExecuteGet(client, query, variables);
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query, variables);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync();
-        Assert.Contains("{\"companies\":[{\"id\":1}]}", result);
+        Approvals.VerifyJson(await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
     public async Task Get_companies_paging()
     {
+        await startTask;
         var after = 1;
         var query = @"
 query {
@@ -109,18 +136,15 @@ query {
     }
   }
 }";
-        var response = await ClientQueryExecutor.ExecuteGet(client, query);
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query);
         response.EnsureSuccessStatusCode();
-        var result = JObject.Parse(await response.Content.ReadAsStringAsync());
-
-        var page = result.SelectToken("..data..companiesConnection..edges[0].cursor")
-            .Value<string>();
-        Assert.NotEqual(after.ToString(), page);
+        Approvals.VerifyJson(await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
     public async Task Get_employee_summary()
     {
+        await startTask;
         var query = @"
 query {
   employeeSummary {
@@ -128,27 +152,15 @@ query {
     averageAge
   }
 }";
-        var response = await ClientQueryExecutor.ExecuteGet(client, query);
+        using var response = await ClientQueryExecutor.ExecuteGet(client, query);
         response.EnsureSuccessStatusCode();
-        var result = JObject.Parse(await response.Content.ReadAsStringAsync());
-
-        var expected = JObject.FromObject(new
-        {
-            data = new
-            {
-                employeeSummary = new[]
-                {
-                    new {companyId = 1, averageAge = 28.0},
-                    new {companyId = 4, averageAge = 34.0}
-                }
-            }
-        });
-        Assert.Equal(expected.ToString(), result.ToString());
+        Approvals.VerifyJson(await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
     public async Task Post()
     {
+        await startTask;
         var query = @"
 {
   companies
@@ -156,7 +168,7 @@ query {
     id
   }
 }";
-        var response = await ClientQueryExecutor.ExecutePost(client, query);
+        using var response = await ClientQueryExecutor.ExecutePost(client, query);
         var result = await response.Content.ReadAsStringAsync();
         Assert.Contains(
             "{\"companies\":[{\"id\":1},{\"id\":4},{\"id\":6},{\"id\":7}]}",
@@ -167,6 +179,7 @@ query {
     [Fact]
     public async Task Post_variable()
     {
+        await startTask;
         var query = @"
 query ($id: ID!)
 {
@@ -179,15 +192,16 @@ query ($id: ID!)
         {
             id = "1"
         };
-        var response = await ClientQueryExecutor.ExecutePost(client, query, variables);
+        using var response = await ClientQueryExecutor.ExecutePost(client, query, variables);
         var result = await response.Content.ReadAsStringAsync();
         Assert.Contains("{\"companies\":[{\"id\":1}]}", result);
         response.EnsureSuccessStatusCode();
     }
 
     [Fact]
-    public Task Should_subscribe_to_companies()
+    public async Task Should_subscribe_to_companies()
     {
+        await startTask;
         var resetEvent = new AutoResetEvent(false);
 
         var result = new GraphQLHttpSubscriptionResult(
@@ -195,30 +209,26 @@ query ($id: ID!)
             new GraphQLRequest
             {
                 Query = @"
-subscription 
+subscription
 {
-  companyChanged 
+  companyChanged
   {
     id
   }
 }"
             },
-            websocketClient);
-
-        result.OnReceive +=
-            res =>
-            {
-                if (res == null)
+            websocketClient,response => {
+                if (response == null)
                 {
                     return;
                 }
-                Assert.Null(res.Errors);
+                Assert.Null(response.Errors);
 
-                if (res.Data != null)
+                if (response.Data != null)
                 {
                     resetEvent.Set();
-                }
-            };
+                }});
+
 
         var cancellationSource = new CancellationTokenSource();
 
@@ -228,7 +238,7 @@ subscription
 
         cancellationSource.Cancel();
 
-        return task;
+        await task;
     }
 
     static TestServer GetTestServer()
@@ -238,7 +248,7 @@ subscription
         return new TestServer(hostBuilder);
     }
 
-    public GraphQlControllerTests(ITestOutputHelper output) : 
+    public GraphQlControllerTests(ITestOutputHelper output) :
         base(output)
     {
     }

@@ -1,24 +1,56 @@
 # Configuration
 
-Configuration requires an instance of `Microsoft.EntityFrameworkCore.Metadata.IModel`. It can be extracted from a DbContext instance via the `DbContext.Model` property. Unfortunately EntityFramework conflates configuration with runtime in its API. So `DbContext` is the main API used at runtime, but it also contains the configuration API via the `OnModelCreating` method. As such a DbContext needs to be instantiated and disposed for the purposes of IModel construction. One possible approach is via a static field on the DbContext.
+toc
 
-snippet: DbContextWithModel
 
-Enabling is then done via registering in a container.
+## Container Registration
 
-This can be applied to a [IServiceCollection](https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection):
+Enabling is done via registering in a container.
 
-snippet: RegisterInContainerServiceCollection
+The container registration can be done via adding to a [IServiceCollection](https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection):
 
-Usage:
+snippet: RegisterInContainer
 
-snippet: RegisterInContainerServiceCollectionUsage
 
-Or via an Action.
+### Inputs
 
-snippet: RegisterInContainerAction
 
-Then the usage entry point `IEfGraphQLService` can be resolved via [dependency injection in GraphQL.net](https://graphql-dotnet.github.io/docs/guides/advanced#dependency-injection) to be used in `ObjectGraphType`s when adding query fields.
+#### IModel
+
+Configuration requires an instance of `Microsoft.EntityFrameworkCore.Metadata.IModel`. This can be passed in as a parameter, or left as null to be resolved from the container. When `IModel` is resolved from the container, `IServiceProvider.GetService` is called first on `IModel`, then on `TDbContext`. If both return null, then an exception will be thrown.
+
+To build an instance of an `IModel` at configuration time it can be helpful to have a class specifically for that purpose:
+
+snippet: ModelBuilder
+
+
+#### Resolve DbContext
+
+A delegate that resolves the DbContext.
+
+snippet: ResolveDbContext.cs
+
+It has access to the current GraphQL user context.
+
+If null then the DbContext will be resolved from the container.
+
+
+#### Resolve Filters
+
+A delegate that resolves the [Filters](filters.md).
+
+snippet: ResolveFilters.cs
+
+It has access to the current GraphQL user context.
+
+If null then the Filters will be resolved from the container.
+
+
+### Usage
+
+snippet: RegisterInContainer
+
+Then the `IEfGraphQLService` can be resolved via [dependency injection in GraphQL.net](https://graphql-dotnet.github.io/docs/guides/advanced#dependency-injection) to be used in `ObjectGraphType`s when adding query fields.
 
 
 ## DocumentExecuter
@@ -93,11 +125,46 @@ With the DbContext existing in the container, it can be resolved in the controll
 
 snippet: GraphQlController
 
-Note that the instance of the DbContext is passed to the [GraphQL .net User Context](https://graphql-dotnet.github.io/docs/getting-started/user-context).
 
-The same instance of the DbContext can then be accessed in the `resolve` delegate by casting the `ResolveFieldContext.UserContext` to the DbContext type:
+## Multiple DbContexts
 
-snippet: QueryUsedInController
+Multiple different DbContext types can be registered and used.
+
+
+### UserContext
+
+A user context that exposes both types.
+
+snippet: MultiUserContext
+
+
+### Register in container
+
+Register both DbContext types in the container and include how those instance can be extracted from the GraphQL context:
+
+snippet: RegisterMultipleInContainer
+
+
+### ExecutionOptions
+
+Use the user type to pass in both DbContext instances.
+
+
+snippet: MultiExecutionOptions
+
+
+### Query
+
+Use both DbContexts in a Query:
+
+snippet: MultiContextQuery.cs
+
+
+### GraphType
+
+Use a DbContext in a Graph:
+
+snippet: Entity1Graph.cs
 
 
 ## Testing the GraphQlController

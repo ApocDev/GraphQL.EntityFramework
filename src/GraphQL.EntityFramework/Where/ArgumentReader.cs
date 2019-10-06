@@ -21,7 +21,7 @@ static class ArgumentReader
         var argument = getArgument(typeof(object), "ids");
         if (argument == null)
         {
-            expression = null;
+            expression = Array.Empty<string>();
             return false;
         }
 
@@ -39,22 +39,22 @@ static class ArgumentReader
         var argument = getArgument(typeof(object), "id");
         if (argument == null)
         {
-            expression = null;
+            expression = string.Empty;
             return false;
         }
 
         switch (argument)
         {
-            case long l:   
+            case long l:
                 expression = l.ToString(CultureInfo.InvariantCulture);
                 break;
-            case int i:    
+            case int i:
                 expression = i.ToString(CultureInfo.InvariantCulture);
                 break;
-            case string s: 
+            case string s:
                 expression = s;
                 break;
-            default:       
+            default:
                 throw new Exception($"TryReadId got an 'id' argument of type '{argument.GetType().FullName}' which is not supported.");
         }
 
@@ -63,7 +63,7 @@ static class ArgumentReader
 
     public static bool TryReadSkip(Func<Type, string, object> getArgument, out int skip)
     {
-        var result = getArgument.TryRead("skip", out skip);
+        var result = getArgument.TryReadInt("skip", out skip);
         if (result)
         {
             if (skip < 0)
@@ -76,7 +76,7 @@ static class ArgumentReader
 
     public static bool TryReadTake(Func<Type, string, object> getArgument, out int take)
     {
-        var result = getArgument.TryRead("take", out take);
+        var result = getArgument.TryReadInt("take", out take);
         if (result)
         {
             if (take < 0)
@@ -98,16 +98,16 @@ static class ArgumentReader
         return (T[]) argument;
     }
 
-    static bool TryRead<T>(this Func<Type, string, object> getArgument, string name, out T value)
+    static bool TryReadInt(this Func<Type, string, object> getArgument, string name, out int value)
     {
-        var argument = getArgument(typeof(T), name);
+        var argument = getArgument(typeof(int), name);
         if (argument == null)
         {
-            value = default;
+            value = 0;
             return false;
         }
 
-        value = (T) argument;
+        value = (int)argument;
         return true;
     }
 }

@@ -5,37 +5,34 @@ using Microsoft.Extensions.DependencyInjection;
 
 class Configuration
 {
-    void RegisterInContainerServiceCollectionUsage(IServiceCollection serviceCollection)
+    #region ModelBuilder
+    static class ModelBuilder
     {
-        #region RegisterInContainerServiceCollectionUsage
+        public static IModel GetInstance()
+        {
+            var builder = new DbContextOptionsBuilder();
+            builder.UseSqlServer("Fake");
+            using var context = new MyDbContext(builder.Options);
+            return context.Model;
+        }
+    }
+    #endregion
 
-        EfGraphQLConventions.RegisterInContainer(serviceCollection, MyDbContext.DataModel);
-
+    void RegisterInContainerExplicit(IServiceCollection serviceCollection)
+    {
+        #region RegisterInContainer
+        EfGraphQLConventions.RegisterInContainer<MyDbContext>(
+            serviceCollection,
+            model: ModelBuilder.GetInstance());
         #endregion
     }
-
-    #region DbContextWithModel
 
     public class MyDbContext :
         DbContext
     {
-        static MyDbContext()
-        {
-            var builder = new DbContextOptionsBuilder();
-            builder.UseSqlServer("fake");
-            using (var context = new MyDbContext(builder.Options))
-            {
-                DataModel = context.Model;
-            }
-        }
-
-        public static readonly IModel DataModel;
-
         public MyDbContext(DbContextOptions options) :
             base(options)
         {
         }
     }
-
-    #endregion
 }

@@ -22,12 +22,12 @@ public class Subscription : ObjectGraphType<object>
         {
             Name = "companyChanged",
             Type = typeof(CompanyGraph),
-            Resolver = new FuncFieldResolver<Company>(context => context.Source as Company),
+            Resolver = new FuncFieldResolver<Company>(context => (Company)context.Source),
             Subscriber = new EventStreamResolver<Company>(context => Subscribe(context, contextFactory, logger))
         });
     }
 
-    IObservable<Company> Subscribe(ResolveEventStreamContext context, ContextFactory contextFactory, ILogger logger)
+    static IObservable<Company> Subscribe(ResolveEventStreamContext context, ContextFactory contextFactory, ILogger logger)
     {
         long lastId = 0;
         var inner = Observable.Using(
@@ -60,7 +60,7 @@ public class Subscription : ObjectGraphType<object>
         return Observable.Interval(TimeSpan.FromSeconds(1)).SelectMany(_ => inner);
     }
 
-    async Task<List<Company>> GetCompanies(
+    static Task<List<Company>> GetCompanies(
         ResolveEventStreamContext context,
         GraphQlEfSampleDbContext ctx,
         long lastId,
@@ -79,7 +79,7 @@ public class Subscription : ObjectGraphType<object>
             .Where(transaction => transaction.Id > lastId)
             .Take(take);
 
-        return await greaterThanLastIdAndPaged.ToListAsync(token);
+        return greaterThanLastIdAndPaged.ToListAsync(token);
     }
 
     static string SupposePersistedQuery()
@@ -92,7 +92,7 @@ public class Subscription : ObjectGraphType<object>
         }";
     }
 
-    ResolveFieldContext ResolveFieldContext(
+    static ResolveFieldContext ResolveFieldContext(
         GraphQlEfSampleDbContext ctx,
         CancellationToken token,
         Document document,
@@ -123,7 +123,7 @@ public class Subscription : ObjectGraphType<object>
         return GetContext(executionContext, node.SubFields["companies"]);
     }
 
-    ResolveFieldContext GetContext(ExecutionContext context, ExecutionNode node)
+    static ResolveFieldContext GetContext(ExecutionContext context, ExecutionNode node)
     {
         var argumentValues = ExecutionHelper.GetArgumentValues(context.Schema,
             node.FieldDefinition.Arguments, node.Field.Arguments, context.Variables);

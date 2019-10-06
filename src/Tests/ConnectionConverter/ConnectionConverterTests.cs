@@ -1,20 +1,35 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using ApprovalTests.Namers;
+using EfLocalDb;
 using GraphQL.EntityFramework;
 using GraphQL.Types;
-using ObjectApproval;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
 
 public class ConnectionConverterTests :
-    XunitLoggingBase
+    XunitApprovalBase
 {
-    List<string> list = new List<string>
+    static ConnectionConverterTests()
+    {
+        sqlInstance = new SqlInstance<MyContext>(
+            buildTemplate: async dbContext =>
+            {
+                await dbContext.Database.EnsureCreatedAsync();
+                dbContext.AddRange(list.Select(x => new Entity {Property = x}));
+                await dbContext.SaveChangesAsync();
+            },
+            constructInstance: builder => new MyContext(builder.Options));
+    }
+
+    static List<string> list = new List<string>
     {
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"
     };
+
+    static SqlInstance<MyContext> sqlInstance;
 
     [Theory]
     //first after
@@ -39,13 +54,13 @@ public class ConnectionConverterTests :
 
     //last after
     [InlineData(null, 7, 2, null)]
-
     public async Task Queryable(int? first, int? after, int? last, int? before)
     {
-        NamerFactory.AdditionalInformation = $"first_{first}_after_{after}_last_{last}_before_{before}";
-        var queryable = new AsyncEnumerable<string>(list);
-        var connection = await ConnectionConverter.ApplyConnectionContext(queryable, first, after, last, before, new ResolveFieldContext<string>(), new GlobalFilters(), CancellationToken.None);
-        ObjectApprover.VerifyWithJson(connection);
+        var fieldContext = new ResolveFieldContext<string>();
+        using var database = await sqlInstance.BuildWithRollback();
+        var entities = database.Context.Entities;
+        var connection = await ConnectionConverter.ApplyConnectionContext(entities, first, after, last, before, fieldContext, new Filters());
+        ObjectApprover.Verify(connection);
     }
 
     [Theory]
@@ -74,13 +89,34 @@ public class ConnectionConverterTests :
 
     public void List(int? first, int? after, int? last, int? before)
     {
-        NamerFactory.AdditionalInformation = $"first_{first}_after_{after}_last_{last}_before_{before}";
         var connection = ConnectionConverter.ApplyConnectionContext(list, first, after, last, before);
-        ObjectApprover.VerifyWithJson(connection);
+        ObjectApprover.Verify(connection);
     }
 
     public ConnectionConverterTests(ITestOutputHelper output) :
         base(output)
     {
+    }
+
+    public class Entity
+    {
+        public Guid Id { get; set; } = XunitLogging.Context.NextGuid();
+        public string? Property { get; set; }
+    }
+
+    public class MyContext :
+        DbContext
+    {
+        public DbSet<Entity> Entities { get; set; } = null!;
+
+        public MyContext(DbContextOptions options) :
+            base(options)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Entity>();
+        }
     }
 }

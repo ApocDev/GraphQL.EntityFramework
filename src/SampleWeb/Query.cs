@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using GraphQL.EntityFramework;
 using GraphQL.Types;
@@ -6,52 +7,40 @@ using GraphQL.Types;
 #region QueryUsedInController
 
 public class Query :
-    QueryGraphType
+    QueryGraphType<GraphQlEfSampleDbContext>
 {
-    public Query(IEfGraphQLService efGraphQlService) :
+    public Query(IEfGraphQLService<GraphQlEfSampleDbContext> efGraphQlService, Func<GraphQlEfSampleDbContext> dbContextFunc) :
         base(efGraphQlService)
     {
         AddQueryField(
             name: "companies",
-            resolve: context =>
-            {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Companies;
-            });
+            resolve: context => context.DbContext.Companies);
 
         #endregion
 
         AddSingleField(
-            resolve: context =>
-            {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Companies;
-            },
+            resolve: context => context.DbContext.Companies,
             name: "company");
+
+        AddSingleField(
+            resolve: context => context.DbContext.Companies,
+            name: "companyOrNull",
+            nullable: true);
 
         AddQueryConnectionField(
             name: "companiesConnection",
-            resolve: context =>
-            {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Companies;
-            });
+            resolve: context => context.DbContext.Companies);
 
         AddQueryField(
             name: "employees",
-            resolve: context =>
-            {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Employees;
-            });
+            resolve: context => context.DbContext.Employees);
 
         AddQueryField(
             name: "employeesByArgument",
             resolve: context =>
             {
                 var content = context.GetArgument<string>("content");
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Employees.Where(x => x.Content == content);
+                return context.DbContext.Employees.Where(x => x.Content == content);
             },
             arguments: new QueryArguments(
                 new QueryArgument<StringGraphType>
@@ -61,11 +50,7 @@ public class Query :
 
         AddQueryConnectionField(
             name: "employeesConnection",
-            resolve: context =>
-            {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                return dbContext.Employees;
-            });
+            resolve: context => context.DbContext.Employees);
 
         #region ManuallyApplyWhere
 
@@ -79,8 +64,7 @@ public class Query :
             ),
             resolve: context =>
             {
-                var dbContext = (GraphQlEfSampleDbContext) context.UserContext;
-                IQueryable<Employee> query = dbContext.Employees;
+                IQueryable<Employee> query = dbContextFunc().Employees;
 
                 if (context.HasArgument("where"))
                 {

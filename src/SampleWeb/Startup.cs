@@ -18,24 +18,30 @@ public class Startup
         GraphTypeTypeRegistry.Register<Employee, EmployeeGraph>();
         GraphTypeTypeRegistry.Register<EmployeeSummary, EmployeeSummaryGraph>();
         GraphTypeTypeRegistry.Register<Company, CompanyGraph>();
+        services.AddScoped(_ => DbContextBuilder.BuildDbContext());
+        services.AddSingleton<Func<GraphQlEfSampleDbContext>>(provider=> provider.GetRequiredService<GraphQlEfSampleDbContext>);
 
-        services.AddScoped(provider => DbContextBuilder.BuildDbContext());
-
-        EfGraphQLConventions.RegisterInContainer(services, DbContextBuilder.Model);
+        EfGraphQLConventions.RegisterInContainer<GraphQlEfSampleDbContext>(
+            services,
+            model: GraphQlEfSampleDbContext.GetModel());
+        EfGraphQLConventions.RegisterConnectionTypesInContainer(services);
 
         foreach (var type in GetGraphQlTypes())
         {
             services.AddSingleton(type);
         }
 
-        services.AddGraphQL(options => options.ExposeExceptions = true).AddWebSockets();
+        var graphQl = services.AddGraphQL(
+            options => options.ExposeExceptions = true);
+        graphQl.AddWebSockets();
         services.AddSingleton<ContextFactory>();
         services.AddSingleton<IDocumentExecuter, EfDocumentExecuter>();
         services.AddSingleton<IDependencyResolver>(
             provider => new FuncDependencyResolver(provider.GetRequiredService));
         services.AddSingleton<ISchema, Schema>();
-        var mvc = services.AddMvc();
+        var mvc = services.AddMvc(option => option.EnableEndpointRouting = false);
         mvc.SetCompatibilityVersion(CompatibilityVersion.Latest);
+        mvc.AddNewtonsoftJson();
     }
 
     static IEnumerable<Type> GetGraphQlTypes()

@@ -11,6 +11,8 @@ static class ReflectionCache
     static MethodInfo guidNullableListContains;
     static MethodInfo intListContains;
     static MethodInfo intNullableListContains;
+    static MethodInfo boolListContains;
+    static MethodInfo boolNullableListContains;
     static MethodInfo shortListContains;
     static MethodInfo shortNullableListContains;
     static MethodInfo longListContains;
@@ -42,6 +44,8 @@ static class ReflectionCache
             .MakeGenericMethod(typeof(string));
         guidListContains = GetContains<Guid>();
         guidNullableListContains = GetContains<Guid?>();
+        boolListContains = GetContains<bool>();
+        boolNullableListContains = GetContains<bool?>();
         intListContains = GetContains<int>();
         intNullableListContains = GetContains<int?>();
         shortListContains = GetContains<short>();
@@ -53,28 +57,40 @@ static class ReflectionCache
         ushortListContains = GetContains<ushort>();
         ushortNullableListContains = GetContains<ushort?>();
         ulongListContains = GetContains<ulong>();
-        ulongNullableListContains = GetContains<ushort?>();
-        dateTimeListContains = GetContains<ulong>();
+        ulongNullableListContains = GetContains<ulong?>();
+        dateTimeListContains = GetContains<DateTime>();
         dateTimeNullableListContains = GetContains<DateTime?>();
         dateTimeOffsetListContains = GetContains<DateTimeOffset>();
         dateTimeOffsetNullableListContains = GetContains<DateTimeOffset?>();
     }
 
-    public static MethodInfo GetListContains(Type type)
+    public static MethodInfo? GetListContains(Type type)
     {
         if (type == typeof(Guid))
         {
             return guidListContains;
         }
+
         if (type == typeof(Guid?))
         {
             return guidNullableListContains;
+        }
+
+        if (type == typeof(bool))
+        {
+            return boolListContains;
+        }
+
+        if (type == typeof(bool?))
+        {
+            return boolNullableListContains;
         }
 
         if (type == typeof(int))
         {
             return intListContains;
         }
+
         if (type == typeof(int?))
         {
             return intNullableListContains;
@@ -84,6 +100,7 @@ static class ReflectionCache
         {
             return shortListContains;
         }
+
         if (type == typeof(short?))
         {
             return shortNullableListContains;
@@ -93,6 +110,7 @@ static class ReflectionCache
         {
             return longListContains;
         }
+
         if (type == typeof(long?))
         {
             return longNullableListContains;
@@ -102,6 +120,7 @@ static class ReflectionCache
         {
             return uintListContains;
         }
+
         if (type == typeof(uint?))
         {
             return uintNullableListContains;
@@ -111,6 +130,7 @@ static class ReflectionCache
         {
             return ushortListContains;
         }
+
         if (type == typeof(ushort?))
         {
             return ushortNullableListContains;
@@ -120,6 +140,7 @@ static class ReflectionCache
         {
             return ulongListContains;
         }
+
         if (type == typeof(ulong?))
         {
             return ulongNullableListContains;
@@ -129,6 +150,7 @@ static class ReflectionCache
         {
             return dateTimeListContains;
         }
+
         if (type == typeof(DateTime?))
         {
             return dateTimeNullableListContains;
@@ -138,6 +160,7 @@ static class ReflectionCache
         {
             return dateTimeOffsetListContains;
         }
+
         if (type == typeof(DateTimeOffset?))
         {
             return dateTimeOffsetNullableListContains;
@@ -150,7 +173,8 @@ static class ReflectionCache
     {
         return typeof(List<T>).GetMethod("Contains");
     }
-   public static bool TryGetEnumType(this Type type, out Type enumType)
+
+    public static bool TryGetEnumType(this Type type, out Type enumType)
     {
         if (type.IsEnum)
         {
@@ -161,7 +185,7 @@ static class ReflectionCache
         var underlying = Nullable.GetUnderlyingType(type);
         if (underlying == null)
         {
-            enumType = null;
+            enumType = typeof(object);
             return false;
         }
 
@@ -171,7 +195,7 @@ static class ReflectionCache
             return true;
         }
 
-        enumType = null;
+        enumType = typeof(object);
         return false;
     }
 }

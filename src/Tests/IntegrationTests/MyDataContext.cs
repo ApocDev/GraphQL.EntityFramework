@@ -1,31 +1,36 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-public class MyDbContext :
+public class IntegrationDbContext :
     DbContext
 {
-    public DbSet<ParentEntity> ParentEntities { get; set; }
-    public DbSet<FilterParentEntity> FilterParentEntities { get; set; }
-    public DbSet<FilterChildEntity> FilterChildEntities { get; set; }
-    public DbSet<ChildEntity> ChildEntities { get; set; }
-    public DbSet<WithMisNamedQueryChildEntity> WithMisNamedQueryChildEntities { get; set; }
-    public DbSet<WithMisNamedQueryParentEntity> WithMisNamedQueryParentEntities { get; set; }
-    public DbSet<Level1Entity> Level1Entities { get; set; }
-    public DbSet<CustomTypeEntity> CustomTypeEntities { get; set; }
-    public DbSet<Level2Entity> Level2Entities { get; set; }
-    public DbSet<Level3Entity> Level3Entities { get; set; }
-    public DbSet<WithNullableEntity> WithNullableEntities { get; set; }
-    public DbSet<NamedIdEntity> NamedEntities { get; set; }
-    public DbSet<WithManyChildrenEntity> WithManyChildrenEntities { get; set; }
-    public DbSet<Child1Entity> Child1Entities { get; set; }
-    public DbSet<Child2Entity> Child2Entities { get; set; }
+    public DbSet<ParentEntity> ParentEntities { get; set; } = null!;
+    public DbSet<FilterParentEntity> FilterParentEntities { get; set; } = null!;
+    public DbSet<FilterChildEntity> FilterChildEntities { get; set; } = null!;
+    public DbSet<ChildEntity> ChildEntities { get; set; } = null!;
+    public DbSet<WithMisNamedQueryChildEntity> WithMisNamedQueryChildEntities { get; set; } = null!;
+    public DbSet<WithMisNamedQueryParentEntity> WithMisNamedQueryParentEntities { get; set; } = null!;
+    public DbSet<Level1Entity> Level1Entities { get; set; } = null!;
+    public DbSet<CustomTypeEntity> CustomTypeEntities { get; set; } = null!;
+    public DbSet<Level2Entity> Level2Entities { get; set; } = null!;
+    public DbSet<Level3Entity> Level3Entities { get; set; } = null!;
+    public DbSet<WithNullableEntity> WithNullableEntities { get; set; } = null!;
+    public DbSet<NamedIdEntity> NamedEntities { get; set; } = null!;
+    public DbSet<WithManyChildrenEntity> WithManyChildrenEntities { get; set; } = null!;
+    public DbSet<Child1Entity> Child1Entities { get; set; } = null!;
+    public DbSet<Child2Entity> Child2Entities { get; set; } = null!;
+    public DbSet<ParentEntityView> ParentEntityView { get; set; } = null!;
 
-    public MyDbContext(DbContextOptions options) :
+    public IntegrationDbContext(DbContextOptions options) :
         base(options)
     {
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ParentEntityView>()
+            .ToView("ParentEntityView")
+            .HasNoKey()
+            .Property(v => v.Property).HasColumnName("Property");
         modelBuilder.Entity<CustomTypeEntity>();
         modelBuilder.Entity<WithNullableEntity>();
         modelBuilder.Entity<FilterParentEntity>();

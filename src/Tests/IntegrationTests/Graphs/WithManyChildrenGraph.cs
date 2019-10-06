@@ -2,9 +2,9 @@
 using Xunit;
 
 public class WithManyChildrenGraph :
-    EfObjectGraphType<WithManyChildrenEntity>
+    EfObjectGraphType<IntegrationDbContext, WithManyChildrenEntity>
 {
-    public WithManyChildrenGraph(IEfGraphQLService graphQlService) :
+    public WithManyChildrenGraph(IEfGraphQLService<IntegrationDbContext> graphQlService) :
         base(graphQlService)
     {
         Field(x => x.Id);

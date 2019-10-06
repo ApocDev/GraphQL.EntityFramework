@@ -6,25 +6,37 @@ using Microsoft.Extensions.DependencyInjection;
 
 static class QueryExecutor
 {
-    public static async Task<object> ExecuteQuery(string query, ServiceCollection services, DbContext dbContext, Inputs inputs, GlobalFilters filters)
+    public static async Task<object> ExecuteQuery<TDbContext>(
+        string query,
+        ServiceCollection services,
+        TDbContext dbContext,
+        Inputs? inputs,
+        Filters? filters)
+        where TDbContext : DbContext
     {
         query = query.Replace("'", "\"");
-        EfGraphQLConventions.RegisterInContainer(services, dbContext.Model, filters);
-        using (var provider = services.BuildServiceProvider())
-        using (var schema = new Schema(new FuncDependencyResolver(provider.GetRequiredService)))
+        EfGraphQLConventions.RegisterInContainer(
+            services,
+            userContext => dbContext,
+            dbContext.Model,
+            userContext => filters);
+        EfGraphQLConventions.RegisterConnectionTypesInContainer(services);
+        using var provider = services.BuildServiceProvider();
+        using var schema = new Schema(new FuncDependencyResolver(provider.GetRequiredService));
+        var documentExecuter = new EfDocumentExecuter();
+
+        #region ExecutionOptionsWithFixIdTypeRule
+        var executionOptions = new ExecutionOptions
         {
-            var documentExecuter = new EfDocumentExecuter();
+            Schema = schema,
+            Query = query,
+            UserContext = dbContext,
+            Inputs = inputs,
+            ValidationRules = FixIdTypeRule.CoreRulesWithIdFix
+        };
+        #endregion
 
-            var executionOptions = new ExecutionOptions
-            {
-                Schema = schema,
-                Query = query,
-                UserContext = dbContext,
-                Inputs = inputs
-            };
-
-            var executionResult = await documentExecuter.ExecuteWithErrorCheck(executionOptions);
-            return executionResult.Data;
-        }
+        var executionResult = await documentExecuter.ExecuteWithErrorCheck(executionOptions);
+        return executionResult.Data;
     }
 }
